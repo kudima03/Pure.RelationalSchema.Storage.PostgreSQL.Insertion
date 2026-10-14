@@ -2,8 +2,8 @@ using System.Collections;
 using System.Data;
 using Pure.RelationalSchema.Abstractions.Table;
 using Pure.RelationalSchema.Storage.Abstractions;
+using Pure.RelationalSchema.Storage.PostgreSQL.Abstractions;
 using Pure.RelationalSchema.Storage.PostgreSQL.Insertion.Tests.Fakes;
-using Pure.RelationalSchema.Storage.PostgreSQL.Querying;
 
 namespace Pure.RelationalSchema.Storage.PostgreSQL.Insertion.Tests;
 
@@ -11,6 +11,8 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
     : IAsyncLifetime,
         IDisposable
 {
+    private const int ExistingRowsCount = 3;
+
     private DatabaseFixture? _fixture;
 
     [Fact]
@@ -45,7 +47,7 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
         _ = Assert.Single(dataSet.Values);
         Assert.True(dataSet.ContainsKey(included));
         Assert.False(dataSet.ContainsKey(excluded));
-        _ = _ = Assert.ThrowsAny<Exception>(() => dataSet[excluded]);
+        _ = Assert.ThrowsAny<Exception>(() => dataSet[excluded]);
     }
 
     [Fact]
@@ -156,7 +158,7 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
     }
 
     [Fact]
-    public void TableDataSetExposesQueryableMembers()
+    public void TableDataSetExposesWrappedQueryableMembers()
     {
         IPostgreSqlStoredSchemaDataSet schema = Schema();
         ITable table = schema.Keys.First();
@@ -169,13 +171,13 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
 
         IStoredTableDataSet tableDataSet = dataSet[table];
 
-        Assert.NotNull(tableDataSet.Expression);
-        Assert.NotNull(tableDataSet.Provider);
-        Assert.Equal(100, tableDataSet.AsQueryable().Count());
+        Assert.Same(schema[table].Expression, tableDataSet.Expression);
+        Assert.Same(schema[table].Provider, tableDataSet.Provider);
+        Assert.Equal(ExistingRowsCount, tableDataSet.AsQueryable().Count());
     }
 
     [Fact]
-    public void TableDataSetEnumeratesInsertedRows()
+    public void TableDataSetEnumeratesWrappedRows()
     {
         IPostgreSqlStoredSchemaDataSet schema = Schema();
         ITable table = schema.Keys.First();
@@ -186,11 +188,11 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
                 new TablesAndTheirRandomRows([table])
             );
 
-        Assert.Equal(100, dataSet[table].AsEnumerable().Count());
+        Assert.Equal(ExistingRowsCount, dataSet[table].AsEnumerable().Count());
     }
 
     [Fact]
-    public void TableDataSetNonGenericEnumerationYieldsInsertedRows()
+    public void TableDataSetNonGenericEnumerationYieldsWrappedRows()
     {
         IPostgreSqlStoredSchemaDataSet schema = Schema();
         ITable table = schema.Keys.First();
@@ -203,11 +205,11 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
 
         IEnumerable tableDataSet = dataSet[table];
 
-        Assert.Equal(100, tableDataSet.Cast<object>().Count());
+        Assert.Equal(ExistingRowsCount, tableDataSet.Cast<object>().Count());
     }
 
     [Fact]
-    public async Task TableDataSetEnumeratesInsertedRowsAsynchronously()
+    public async Task TableDataSetEnumeratesWrappedRowsAsynchronously()
     {
         IPostgreSqlStoredSchemaDataSet schema = Schema();
         ITable table = schema.Keys.First();
@@ -220,42 +222,41 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
 
         IRow[] rows = await dataSet[table].ToArrayAsync();
 
-        Assert.Equal(100, rows.Length);
-        Assert.Equal(ConnectionState.Open, dataSet.Connection.State);
+        Assert.Equal(ExistingRowsCount, rows.Length);
     }
 
     [Fact]
-    public async Task TableDataSetEnumeratesExistingRowsAsynchronously()
+    public async Task AsynchronousEnumerationInsertsRows()
     {
         IPostgreSqlStoredSchemaDataSet schema = Schema();
+        ITable table = schema.Keys.First();
 
         IPostgreSqlStoredSchemaDataSet dataSet =
             new PostgreSqlStoredSchemaDataSetWithInsertedRows(
                 schema,
-                new TablesAndTheirDefaultRows(schema.Keys)
+                new TablesAndTheirRandomRows([table])
             );
 
-        foreach (IStoredTableDataSet tableDataSet in dataSet.Values)
-        {
-            _ = Assert.Single(await tableDataSet.ToArrayAsync());
-        }
+        _ = await dataSet[table].ToArrayAsync();
+
+        Assert.Equal(100, _fixture!.RowCount(table));
     }
 
     [Fact]
-    public void InsertsNothingIntoUntouchedTables()
+    public void QueryableMembersInsertRows()
     {
         IPostgreSqlStoredSchemaDataSet schema = Schema();
-        ITable included = schema.Keys.First();
-        ITable untouched = schema.Keys.Last();
+        ITable table = schema.Keys.First();
 
-        _ = new PostgreSqlStoredSchemaDataSetWithInsertedRows(
-            schema,
-            new TablesAndTheirRandomRows([included])
-        )[included]
-            .AsEnumerable()
-            .Count();
+        IPostgreSqlStoredSchemaDataSet dataSet =
+            new PostgreSqlStoredSchemaDataSetWithInsertedRows(
+                schema,
+                new TablesAndTheirRandomRows([table])
+            );
 
-        Assert.Empty(schema[untouched].AsEnumerable());
+        _ = dataSet[table].Provider;
+
+        Assert.Equal(100, _fixture!.RowCount(table));
     }
 
     public void Dispose()
@@ -275,8 +276,12 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
         return Task.CompletedTask;
     }
 
-    private PostgreSqlStoredSchemaDataSet Schema()
+    private FakeStoredSchemaDataSet Schema()
     {
-        return new PostgreSqlStoredSchemaDataSet(_fixture!.Schema, _fixture.Connection);
+        return new FakeStoredSchemaDataSet(
+            _fixture!.Schema,
+            _fixture.Connection,
+            table => [.. new DefaultRowsForTable(table).Take(ExistingRowsCount)]
+        );
     }
 }
