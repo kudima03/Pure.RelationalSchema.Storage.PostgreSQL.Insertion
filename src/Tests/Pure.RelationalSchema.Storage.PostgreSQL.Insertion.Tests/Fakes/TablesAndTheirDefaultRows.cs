@@ -1,0 +1,25 @@
+using System.Collections;
+using Pure.RelationalSchema.Abstractions.Table;
+using Pure.RelationalSchema.Storage.Abstractions;
+
+namespace Pure.RelationalSchema.Storage.PostgreSQL.Insertion.Tests.Fakes;
+
+internal sealed record TablesAndTheirDefaultRows : IEnumerable<IGrouping<ITable, IRow>>
+{
+    private readonly IEnumerable<IGrouping<ITable, IRow>> _tablesAndRows;
+
+    public TablesAndTheirDefaultRows(IEnumerable<ITable> tables)
+    {
+        _tablesAndRows = tables.Select(x => new Grouping(x, new DefaultRowsForTable(x)));
+    }
+
+    public IEnumerator<IGrouping<ITable, IRow>> GetEnumerator()
+    {
+        return _tablesAndRows.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+}
