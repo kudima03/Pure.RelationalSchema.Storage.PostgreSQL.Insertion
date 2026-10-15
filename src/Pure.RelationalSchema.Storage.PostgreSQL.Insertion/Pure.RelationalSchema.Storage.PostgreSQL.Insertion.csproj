@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <EnablePackageValidation>true</EnablePackageValidation>
-    <IsAotCompatible>false</IsAotCompatible>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
   <PropertyGroup>
     <PackageId>Pure.RelationalSchema.Storage.PostgreSQL.Insertion</PackageId>
