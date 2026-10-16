@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-preview.0.1.1] - 2026-10-16
+
 ### Security
 
 - Cell values are now escaped before they are written into the `INSERT` statement. Before, a value containing a single quote produced invalid SQL, and a crafted value could run arbitrary SQL, such as `x'); DROP TABLE ...; --`.
