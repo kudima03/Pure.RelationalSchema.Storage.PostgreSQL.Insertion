@@ -77,7 +77,16 @@ internal sealed record InsertStatement : IString
                                 new CommaString(),
                                 new WhitespaceString()
                             ),
-                            x.Cells.Values.Select(c => new StringLiteral(c.Value))
+                            x.Cells.Values.Select(c => new ConcatenatedString(
+                                new String("E"),
+                                new WrappedString(
+                                    new SingleQuoteString(),
+                                    new String(
+                                        c.Value.TextValue.Replace("\\", "\\\\")
+                                            .Replace("'", "''")
+                                    )
+                                )
+                            ))
                         ),
                         new RightRoundBracketString()
                     ))
