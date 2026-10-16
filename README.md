@@ -139,9 +139,9 @@ internal sealed class TableRows : IGrouping<ITable, IRow>
 
 `GroupBy` cannot be used to group the rows: it hashes the key, and `ITable` implementations do not support `GetHashCode`, so supply your own `IGrouping<ITable, IRow>` as above. Every cell value is an `IString`.
 
-## Known limitations
+## How values are written
 
-- Values are written as quoted string literals without escaping, so a value containing a single quote will produce invalid SQL (or worse). Do not insert untrusted input. This is inherited from the original implementation and has not been fixed yet.
+Every cell value is written into the `INSERT` statement as an escaped string literal (`E'...'`, with backslashes and single quotes doubled), so a value cannot end the literal or change the statement. PostgreSQL then converts the literal to the column's type, so a value that does not convert (for example `abc` for an `integer` column) makes the insert fail.
 
 ## Related packages
 
