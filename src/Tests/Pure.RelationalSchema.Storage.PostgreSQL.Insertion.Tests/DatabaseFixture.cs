@@ -90,6 +90,21 @@ public sealed record DatabaseFixture : IDisposable
         return Convert.ToInt64(command.ExecuteScalar());
     }
 
+    public IReadOnlyList<string> Values(ITable table, IColumn column)
+    {
+        using IDbCommand command = Connection.CreateCommand();
+        string columnName = Trimmed(new ColumnHash(column));
+        command.CommandText =
+            $"SELECT \"{columnName}\"::text FROM {QualifiedName(table)};";
+        using IDataReader reader = command.ExecuteReader();
+        List<string> values = [];
+        while (reader.Read())
+        {
+            values.Add(reader.GetString(0));
+        }
+        return values;
+    }
+
     public void Dispose()
     {
         Connection.Dispose();
