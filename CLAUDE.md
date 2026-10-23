@@ -39,7 +39,7 @@ This is the **insertion (write)** part of the PostgreSQL storage implementation 
 
 **Multi-targeting:** net8.0, net9.0, net10.0. `IsAotCompatible` is `true` and the build must stay free of IL2026/IL3050 warnings. Do not use `AsQueryable()` (annotated as trim/AOT-unsafe); call `Queryable.Select(dataSet, ...)` explicitly, which also avoids the `IEnumerable`/`IAsyncEnumerable` overload ambiguity.
 
-**Package validation:** `EnablePackageValidation = true` with `PackageValidationBaselineVersion` set to the last published version (`0.1.0-preview.0.3.0`). Breaking API changes fail the build; bump the baseline after each release.
+**Package validation:** `EnablePackageValidation = true` with `PackageValidationBaselineVersion` set to the last published version (`0.1.0-preview.0.4.0`). Breaking API changes fail the build; bump the baseline after each release.
 
 **Publishing:** triggered by pushing a semver tag matching `*.*.*`. The tag name becomes the `PackageVersion`. Packages are published to both GitHub Packages and NuGet.org.
 
