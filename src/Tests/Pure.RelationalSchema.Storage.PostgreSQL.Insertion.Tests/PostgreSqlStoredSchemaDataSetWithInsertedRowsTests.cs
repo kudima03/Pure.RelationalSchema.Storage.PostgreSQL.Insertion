@@ -34,7 +34,7 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsTests
     }
 
     [Fact]
-    public void InsertOnlyDistinctRows()
+    public void InsertDuplicateRowsAsGiven()
     {
         IPostgreSqlStoredSchemaDataSet schema = EmptySchema();
 
@@ -46,11 +46,11 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsTests
 
         Touch(dataSet);
 
-        Assert.All(schema.Keys, table => Assert.Equal(1, _fixture!.RowCount(table)));
+        Assert.All(schema.Keys, table => Assert.Equal(100, _fixture!.RowCount(table)));
     }
 
     [Fact]
-    public void SkipRowsThatAlreadyExist()
+    public void InsertRowsThatTheWrappedDataSetAlreadyContains()
     {
         IPostgreSqlStoredSchemaDataSet schema = new FakeStoredSchemaDataSet(
             _fixture!.Schema,
@@ -66,27 +66,7 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsTests
 
         Touch(dataSet);
 
-        Assert.All(schema.Keys, table => Assert.Equal(0, _fixture.RowCount(table)));
-    }
-
-    [Fact]
-    public void InsertOnlyRowsMissingFromExisting()
-    {
-        IPostgreSqlStoredSchemaDataSet schema = new FakeStoredSchemaDataSet(
-            _fixture!.Schema,
-            _fixture.Connection,
-            table => new DefaultRowsForTable(table).Take(1)
-        );
-
-        IPostgreSqlStoredSchemaDataSet dataSet =
-            new PostgreSqlStoredSchemaDataSetWithInsertedRows(
-                schema,
-                new TablesAndTheirRandomRows(schema.Keys)
-            );
-
-        Touch(dataSet);
-
-        Assert.Equal(200, schema.Keys.Sum(_fixture.RowCount));
+        Assert.All(schema.Keys, table => Assert.Equal(100, _fixture.RowCount(table)));
     }
 
     [Fact]
@@ -105,7 +85,7 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsTests
         _ = dataSet[table].ElementType;
         _ = dataSet[table].AsEnumerable().Count();
 
-        Assert.Equal(1, _fixture!.RowCount(table));
+        Assert.Equal(100, _fixture!.RowCount(table));
     }
 
     [Fact]
