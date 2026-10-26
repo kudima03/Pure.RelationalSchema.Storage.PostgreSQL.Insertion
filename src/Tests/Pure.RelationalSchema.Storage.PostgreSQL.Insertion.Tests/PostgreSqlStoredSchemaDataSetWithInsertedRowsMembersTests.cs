@@ -203,9 +203,14 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsMembersTests
                 new TablesAndTheirRandomRows([table])
             );
 
-        IEnumerable tableDataSet = dataSet[table];
+        IEnumerator enumerator = ((IEnumerable)dataSet[table]).GetEnumerator();
+        int count = 0;
+        while (enumerator.MoveNext())
+        {
+            count++;
+        }
 
-        Assert.Equal(ExistingRowsCount, tableDataSet.Cast<object>().Count());
+        Assert.Equal(ExistingRowsCount, count);
     }
 
     [Fact]

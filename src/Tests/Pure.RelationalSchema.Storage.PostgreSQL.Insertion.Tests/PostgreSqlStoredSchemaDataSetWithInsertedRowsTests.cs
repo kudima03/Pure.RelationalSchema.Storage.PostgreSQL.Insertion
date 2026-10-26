@@ -70,6 +70,23 @@ public sealed record PostgreSqlStoredSchemaDataSetWithInsertedRowsTests
     }
 
     [Fact]
+    public void InsertsNothingForEmptyGrouping()
+    {
+        IPostgreSqlStoredSchemaDataSet schema = EmptySchema();
+        ITable table = schema.Keys.First();
+
+        IPostgreSqlStoredSchemaDataSet dataSet =
+            new PostgreSqlStoredSchemaDataSetWithInsertedRows(
+                schema,
+                [new Grouping(table, [])]
+            );
+
+        Touch(dataSet);
+
+        Assert.Equal(0, _fixture!.RowCount(table));
+    }
+
+    [Fact]
     public void InsertsOnlyOnce()
     {
         IPostgreSqlStoredSchemaDataSet schema = EmptySchema();
