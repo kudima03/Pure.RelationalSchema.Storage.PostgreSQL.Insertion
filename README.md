@@ -1,6 +1,6 @@
 # Pure.RelationalSchema.Storage.PostgreSQL.Insertion
 
-PostgreSQL row insertion for the **Pure** relational schema ecosystem — de-duplicating `INSERT` decorators over `Pure.RelationalSchema.Storage.PostgreSQL.Querying` datasets.
+PostgreSQL row insertion for the **Pure** relational schema ecosystem — lazy `INSERT` decorators over `Pure.RelationalSchema.Storage.PostgreSQL.Querying` datasets.
 
 [![.NET build & test](https://github.com/kudima03/Pure.RelationalSchema.Storage.PostgreSQL.Insertion/actions/workflows/build-and-test.yml/badge.svg?branch=main)](https://github.com/kudima03/Pure.RelationalSchema.Storage.PostgreSQL.Insertion/actions/workflows/build-and-test.yml)
 [![publish NuGet](https://github.com/kudima03/Pure.RelationalSchema.Storage.PostgreSQL.Insertion/actions/workflows/publish-nuget.yml/badge.svg?branch=main)](https://github.com/kudima03/Pure.RelationalSchema.Storage.PostgreSQL.Insertion/actions/workflows/publish-nuget.yml)
@@ -9,12 +9,9 @@ PostgreSQL row insertion for the **Pure** relational schema ecosystem — de-dup
 
 ## Overview
 
-`Pure.RelationalSchema.Storage.PostgreSQL.Insertion` writes rows into a live PostgreSQL database through the storage abstractions defined in `Pure.RelationalSchema.Storage`. `PostgreSqlStoredSchemaDataSetWithInsertedRows` wraps any `IPostgreSqlStoredSchemaDataSet` (the usual implementation is `PostgreSqlStoredSchemaDataSet` from `Pure.RelationalSchema.Storage.PostgreSQL.Querying`) and a set of rows grouped by table. The `INSERT INTO` statement is executed lazily, the first time a table dataset of the result is accessed. Before inserting, it:
+`Pure.RelationalSchema.Storage.PostgreSQL.Insertion` writes rows into a live PostgreSQL database through the storage abstractions defined in `Pure.RelationalSchema.Storage`. `PostgreSqlStoredSchemaDataSetWithInsertedRows` wraps any `IPostgreSqlStoredSchemaDataSet` (the usual implementation is `PostgreSqlStoredSchemaDataSet` from `Pure.RelationalSchema.Storage.PostgreSQL.Querying`) and a set of rows grouped by table. The `INSERT INTO` statement is executed lazily, the first time a table dataset of the result is accessed, and only once. It then exposes the wrapped dataset, so the inserted rows can be read back through the same `IStoredTableDataSet`.
 
-- skips rows that are duplicates within the supplied batch, and
-- skips rows that already exist in the table (compared by `RowHash`).
-
-It then exposes the wrapped dataset, so the inserted rows can be read back through the same `IStoredTableDataSet`. Wrapping the result again with the same rows inserts nothing new.
+Rows are inserted exactly as supplied: duplicates within the batch are not removed, and the table is not read to skip rows that are already stored. Uniqueness is enforced by the database: declare a unique index on the table (`IIndex.IsUnique`), and inserting a row that conflicts with it makes the insert fail. Without one, inserting the same rows again stores them again.
 
 The result exposes **only the tables present in the supplied groupings**, not every table of the wrapped dataset.
 
@@ -24,15 +21,14 @@ This package covers writes only. Creating the tables and reading rows are handle
 
 | Type | Kind | Description |
 |------|------|-------------|
-| `PostgreSqlStoredSchemaDataSetWithInsertedRows` | record | Wraps an `IPostgreSqlStoredSchemaDataSet` and inserts grouped `IRow` data into the corresponding table datasets, skipping duplicate and already-stored rows; implements `IPostgreSqlStoredSchemaDataSet` |
+| `PostgreSqlStoredSchemaDataSetWithInsertedRows` | record | Wraps an `IPostgreSqlStoredSchemaDataSet` and inserts grouped `IRow` data into the corresponding table datasets; implements `IPostgreSqlStoredSchemaDataSet` |
 
 The constructor takes any `IPostgreSqlStoredSchemaDataSet`. The table-level decorator, `InsertStatement` and the hashing helpers are internal. `IPostgreSqlStoredSchemaDataSet` comes from `Pure.RelationalSchema.Storage.PostgreSQL.Abstractions`; this package does not depend on Querying or Creation.
 
 ## Dependencies
 
-- [`Pure.RelationalSchema.Storage.PostgreSQL.Abstractions`](https://github.com/kudima03/Pure.RelationalSchema.Storage.PostgreSQL.Abstractions/tree/0.1.0-preview.0.1.0) — provides `IPostgreSqlStoredSchemaDataSet`; the wrapped dataset is re-read to skip rows that already exist
+- [`Pure.RelationalSchema.Storage.PostgreSQL.Abstractions`](https://github.com/kudima03/Pure.RelationalSchema.Storage.PostgreSQL.Abstractions/tree/0.1.0-preview.0.1.0) — provides `IPostgreSqlStoredSchemaDataSet`
 - [`Pure.RelationalSchema.Storage`](https://github.com/kudima03/Pure.RelationalSchema.Storage/tree/0.1.0-preview.8.0.0) — storage abstractions (`IStoredSchemaDataSet`, `IStoredTableDataSet`, `IRow`) that this package implements
-- [`Pure.RelationalSchema.Storage.HashCodes`](https://github.com/kudima03/Pure.RelationalSchema.Storage.HashCodes/tree/0.1.0-preview.2.2.0) — `RowHash`, used to detect duplicate and existing rows
 - [`Pure.RelationalSchema.HashCodes`](https://github.com/kudima03/Pure.RelationalSchema.HashCodes/tree/3.3.0) — hash codes used to derive PostgreSQL object names
 - [`Pure.Primitives.Abstractions`](https://github.com/kudima03/Pure.Primitives.Abstractions/tree/4.3.0) — base interfaces for primitive types (`IString`, `IBool`, etc.)
 - [`Pure.Primitives`](https://github.com/kudima03/Pure.Primitives/tree/3.6.5) — concrete primitive type implementations

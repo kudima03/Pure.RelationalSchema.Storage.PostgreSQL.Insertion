@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Rows are no longer de-duplicated before they are inserted. Duplicates within the supplied batch are inserted as given, and the table is no longer read to skip rows that are already stored, so inserting the same rows again stores them again unless a unique index rejects them. Skipping stored rows read the whole table on every insert and, with `Pure.RelationalSchema.Storage.PostgreSQL.Querying` 0.1.0-preview.0.6.0, failed with `NotSupportedException` because the row-hash projection cannot be translated to SQL. Declare a unique index (`IIndex.IsUnique`) where rows must be unique.
+- Removed the dependency on `Pure.RelationalSchema.Storage.HashCodes`.
+
 ## [0.1.0-preview.0.4.0] - 2026-10-23
 
 ### Changed

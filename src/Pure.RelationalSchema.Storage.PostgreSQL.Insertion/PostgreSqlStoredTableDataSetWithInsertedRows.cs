@@ -8,7 +8,6 @@ using Pure.Primitives.String.Operations;
 using Pure.RelationalSchema.Abstractions.Table;
 using Pure.RelationalSchema.HashCodes;
 using Pure.RelationalSchema.Storage.Abstractions;
-using Pure.RelationalSchema.Storage.HashCodes;
 
 namespace Pure.RelationalSchema.Storage.PostgreSQL.Insertion;
 
@@ -28,18 +27,7 @@ internal sealed record PostgreSqlStoredTableDataSetWithInsertedRows : IStoredTab
         _dataSet = dataSet;
         _rowsInserted = new Lazy<IBool>(() =>
         {
-            IEnumerable<IRow> rowsToInsert = rows.DistinctBy(x =>
-                    new HexString(new RowHash(x)).TextValue
-                )
-                .ExceptBy(
-                    Queryable.Select(
-                        dataSet,
-                        c => new HexString(new RowHash(c)).TextValue
-                    ),
-                    x => new HexString(new RowHash(x)).TextValue
-                );
-
-            if (!rowsToInsert.Any())
+            if (!rows.Any())
             {
                 return new True();
             }
@@ -48,7 +36,7 @@ internal sealed record PostgreSqlStoredTableDataSetWithInsertedRows : IStoredTab
             command.CommandText = new InsertStatement(
                 new TrimmedHash(new HexString(new TableHash(dataSet.TableSchema))),
                 schemaName,
-                rowsToInsert
+                rows
             ).TextValue;
             _ = command.ExecuteNonQuery();
             return new True();
