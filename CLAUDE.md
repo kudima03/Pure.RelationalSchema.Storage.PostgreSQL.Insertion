@@ -37,7 +37,7 @@ This is the **insertion (write)** part of the PostgreSQL storage implementation 
 
 **CI style check:** the `Code style check by csharpier` step in `.github/workflows/build-and-test.yml` is commented out on purpose. csharpier wants `) { }` on one line for chained constructors with an empty body, while `dotnet format` (IDE0055 with `csharp_new_line_before_open_brace = all`) wants `{ }` on its own line, so both cannot pass on `PostgreSqlStoredSchemaDataSetWithInsertedRows.cs` and `InsertStatement.cs`. `dotnet format` is the authoritative check.
 
-**Multi-targeting:** net8.0, net9.0, net10.0. `IsAotCompatible` is `true` and the build must stay free of IL2026/IL3050 warnings. Do not use `AsQueryable()` (annotated as trim/AOT-unsafe); call `Queryable.Select(dataSet, ...)` explicitly, which also avoids the `IEnumerable`/`IAsyncEnumerable` overload ambiguity.
+**Multi-targeting:** net8.0, net9.0, net10.0, net11.0 (tests run on net11.0). `IsAotCompatible` is `true` and the build must stay free of IL2026/IL3050 warnings. Do not use `AsQueryable()` (annotated as trim/AOT-unsafe); call `Queryable.Select(dataSet, ...)` explicitly, which also avoids the `IEnumerable`/`IAsyncEnumerable` overload ambiguity.
 
 **Package validation:** `EnablePackageValidation = true` with `PackageValidationBaselineVersion` set to the last published version (`0.1.0-preview.1.0.0`). Breaking API changes fail the build; bump the baseline after each release.
 
